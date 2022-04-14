@@ -20,7 +20,7 @@ fn main() {
     }
 
     println!("-- NOW BORDERING");
-    for (x, y) in [(0, -3)] {
+    for (x, y) in [(0, -3), (-3, 1)] {
         let grid1 = world(seeds, (x, y, 4, 4));
         println!("Start pos {},{}", x, y);
         for row in grid1.iter().enumerate() {

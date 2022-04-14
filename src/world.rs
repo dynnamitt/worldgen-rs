@@ -3,7 +3,6 @@ use rand_chacha::ChaCha8Rng;
 
 pub type Viewport = (i64, i64, usize, usize);
 pub type Seeds = (u64, u64);
-pub type Row = (i64, u64);
 
 pub fn world((ns, ss): Seeds, vp @ (x, y, w, h): Viewport) -> Vec<Vec<u64>> {
     if y >= 0 {
@@ -14,7 +13,6 @@ pub fn world((ns, ss): Seeds, vp @ (x, y, w, h): Viewport) -> Vec<Vec<u64>> {
         hemisphere(ns, Dir::Reverse, vp)
     } else {
         // bordering
-        println!(" y:{}  h:{}  .. ", y, h);
         let vp_s: Viewport = (x, 0, w, (h as i64 + y) as usize);
         let vp_n: Viewport = (x, y, w, y.abs() as usize);
         let south_xs = hemisphere(ss, Dir::Normal, vp_s);
@@ -48,10 +46,10 @@ fn hemisphere(master_seed: u64, dir: Dir, (x, y, w, h): Viewport) -> Vec<Vec<u64
         .enumerate()
         .partition(|(i, _v)| i % 2 == 0);
 
-    let seed_pairs = e_seeds.iter().zip(w_seeds);
+    let seed_pairs = e_seeds.iter().zip(w_seeds.iter());
 
     let xs: Vec<Vec<u64>> = seed_pairs
-        .map(|((_i, e_seed), (_j, w_seed))| Longitude::new(*e_seed, w_seed).take_finite(x, w))
+        .map(|((_i, e_seed), (_j, w_seed))| Longitude::new(*e_seed, *w_seed).take_finite(x, w))
         .collect();
 
     dir.organize(xs)
@@ -75,17 +73,17 @@ impl Longitude {
         let skips = x.abs() as usize;
         if x >= 0 {
             // westward
-            self.pipe(Dir::Normal, skips, w)
+            self.take_from_direction(Dir::Normal, skips, w)
         } else if (x.abs() as usize) >= w {
             // eastward .rev[erse]
-            self.pipe(Dir::Reverse, skips, w)
+            self.take_from_direction(Dir::Reverse, skips, w)
         } else {
             // bordering
             todo!()
         }
     }
 
-    fn pipe(self, dir: Dir, skips: usize, w: usize) -> Vec<u64> {
+    fn take_from_direction(self, dir: Dir, skips: usize, w: usize) -> Vec<u64> {
         let d = if dir == Dir::Normal {
             self.west
         } else {
