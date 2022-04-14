@@ -3,6 +3,7 @@ use rand_chacha::ChaCha8Rng;
 
 pub type Viewport = (i64, i64, usize, usize);
 pub type Seeds = (u64, u64);
+pub type Row = (i64, u64);
 
 pub fn world((ns, ss): Seeds, vp @ (x, y, w, h): Viewport) -> Vec<Vec<u64>> {
     if y >= 0 {
@@ -28,6 +29,15 @@ pub enum Dir {
     Normal,
     Reverse,
 }
+impl Dir {
+    fn organize<T>(self, xs: Vec<T>) -> Vec<T> {
+        if self == Dir::Reverse {
+            xs.into_iter().rev().collect()
+        } else {
+            xs
+        }
+    }
+}
 
 fn hemisphere(master_seed: u64, dir: Dir, (x, y, w, h): Viewport) -> Vec<Vec<u64>> {
     let skips = y.abs() as usize;
@@ -44,11 +54,7 @@ fn hemisphere(master_seed: u64, dir: Dir, (x, y, w, h): Viewport) -> Vec<Vec<u64
         .map(|((_i, e_seed), (_j, w_seed))| Longitude::new(*e_seed, w_seed).take_finite(x, w))
         .collect();
 
-    if dir == Dir::Normal {
-        xs
-    } else {
-        xs.into_iter().rev().collect()
-    }
+    dir.organize(xs)
 }
 
 // Infinite "line of numbers"
@@ -64,23 +70,29 @@ impl Longitude {
         let wg = PsudoRng::new(w_seed);
         Self { east: eg, west: wg }
     }
-    pub fn take_finite(self, x: i64, len: usize) -> Vec<u64> {
+
+    pub fn take_finite(self, x: i64, w: usize) -> Vec<u64> {
+        let skips = x.abs() as usize;
         if x >= 0 {
             // westward
-            self.west.into_iter().skip(x as usize).take(len).collect()
-        } else if (x.abs() as usize) >= len {
+            self.pipe(Dir::Normal, skips, w)
+        } else if (x.abs() as usize) >= w {
             // eastward .rev[erse]
-            self.east
-                .skip(x.abs() as usize - 1)
-                .take(len)
-                .collect::<Vec<u64>>()
-                .into_iter()
-                .rev()
-                .collect()
+            self.pipe(Dir::Reverse, skips, w)
         } else {
             // bordering
             todo!()
         }
+    }
+
+    fn pipe(self, dir: Dir, skips: usize, w: usize) -> Vec<u64> {
+        let d = if dir == Dir::Normal {
+            self.west
+        } else {
+            self.east
+        };
+        let xs: Vec<u64> = d.skip(skips).take(w).collect();
+        dir.organize(xs)
     }
 }
 

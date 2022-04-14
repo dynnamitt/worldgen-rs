@@ -10,11 +10,22 @@ fn fraction(i: u64) -> f64 {
 fn main() {
     let now = Instant::now();
 
-    let x = 0;
-    let y = -4;
-    let grid = world((101041010, 56565656), (x, y, 3, 5));
-    for row in grid.iter().enumerate() {
-        println!(" {:?}", row);
+    let seeds = (33, 77777);
+    for (x, y) in [(0, 0), (-3, -3), (-3, 0), (0, -3)] {
+        let grid1 = world(seeds, (x, y, 3, 3));
+        println!("Start pos {},{}", x, y);
+        for row in grid1.iter().enumerate() {
+            println!(" {:?}", row);
+        }
+    }
+
+    println!("-- NOW BORDERING");
+    for (x, y) in [(0, -3)] {
+        let grid1 = world(seeds, (x, y, 4, 4));
+        println!("Start pos {},{}", x, y);
+        for row in grid1.iter().enumerate() {
+            println!(" {:?}", row);
+        }
     }
 
     println!(" ----v-----------v------ ");
