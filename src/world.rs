@@ -22,7 +22,7 @@ pub fn world((ns, ss): Seeds, vp @ (x, y, w, h): Viewport) -> Vec<Vec<u64>> {
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum Dir {
     Normal,
     Reverse,
@@ -49,7 +49,7 @@ fn hemisphere(master_seed: u64, dir: Dir, (x, y, w, h): Viewport) -> Vec<Vec<u64
     let seed_pairs = e_seeds.iter().zip(w_seeds.iter());
 
     let xs: Vec<Vec<u64>> = seed_pairs
-        .map(|((_i, e_seed), (_j, w_seed))| Longitude::new(*e_seed, *w_seed).take_finite(x, w))
+        .map(|((_i, e_seed), (_j, w_seed))| Longitudes::take_finite((*e_seed, *w_seed), x, w))
         .collect();
 
     dir.organize(xs)
@@ -57,39 +57,31 @@ fn hemisphere(master_seed: u64, dir: Dir, (x, y, w, h): Viewport) -> Vec<Vec<u64
 
 // Infinite "line of numbers"
 // going from center (west[0]) out into 2 directions"
-pub struct Longitude {
-    east: PsudoRng,
-    west: PsudoRng,
-}
+pub struct Longitudes {}
 
-impl Longitude {
-    pub fn new(e_seed: u64, w_seed: u64) -> Self {
-        let eg = PsudoRng::new(e_seed);
-        let wg = PsudoRng::new(w_seed);
-        Self { east: eg, west: wg }
-    }
-
-    pub fn take_finite(self, x: i64, w: usize) -> Vec<u64> {
+impl Longitudes {
+    pub fn take_finite((e_seed, w_seed): Seeds, x: i64, w: usize) -> Vec<u64> {
         let skips = x.abs() as usize;
+        //println!("Skips = {}", skips);
         if x >= 0 {
             // westward
-            self.take_from_direction(Dir::Normal, skips, w)
+            Longitudes::take_from_one_dir(Dir::Normal, w_seed, skips, w)
         } else if (x.abs() as usize) >= w {
             // eastward .rev[erse]
-            self.take_from_direction(Dir::Reverse, skips, w)
+            Longitudes::take_from_one_dir(Dir::Reverse, e_seed, skips, w)
         } else {
             // bordering
-            todo!()
+            let west_xs =
+                Longitudes::take_from_one_dir(Dir::Normal, w_seed, 0, (w as i64 + x) as usize);
+            let mut east_xs = Longitudes::take_from_one_dir(Dir::Reverse, e_seed, skips, skips);
+            east_xs.extend(west_xs);
+            east_xs
         }
     }
 
-    fn take_from_direction(self, dir: Dir, skips: usize, w: usize) -> Vec<u64> {
-        let d = if dir == Dir::Normal {
-            self.west
-        } else {
-            self.east
-        };
-        let xs: Vec<u64> = d.skip(skips).take(w).collect();
+    fn take_from_one_dir(dir: Dir, seed: u64, skips: usize, w: usize) -> Vec<u64> {
+        let rng = PsudoRng::new(seed);
+        let xs: Vec<u64> = rng.skip(skips).take(w).collect();
         dir.organize(xs)
     }
 }
