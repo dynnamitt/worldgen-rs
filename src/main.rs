@@ -13,29 +13,32 @@ fn fraction(i: u64) -> f64 {
 fn colorize_row(it: impl IntoIterator<Item = u64>) -> String {
     it.into_iter()
         .map(fraction)
-        .map(|fr| color_utils::AnsiColors::sample(fr, color_utils::GRAYSCALE))
+        .map(|fr| color_utils::sample_by_frac(fr, color_utils::GRAYSCALE))
         .map(color::AnsiValue::grayscale)
-        .map(|a| a.bg_string() + " ")
+        .map(|a| a.bg_string() + ".")
         .collect::<Vec<String>>()
         .join("")
 }
 
 fn main() {
-    println!("{}{}{}", clear::All, style::Reset, cursor::Goto(1, 1));
+    println!("{}{}", clear::All, style::Reset);
     let seeds = (329_329_892_390, 32_309_302);
     let (cols, rows) = terminal_size().unwrap(); // never use it :-p
     let pause = Duration::from_millis(666);
+    let nums: std::ops::Range<i64> = -7..7;
 
-    for i in [-2, -1, 0, 1, 2, 3, 4, 5] {
-        let vp = (-i, -i, cols as usize, rows as usize);
+    for i in nums {
+        let z = 4; // i.abs() as u16 + 1;
+        let vp = (i, -i, cols / z, rows / z);
         let grid1 = world(seeds, vp);
+        let grid2 = redist_with_zoom(grid1, vp, z);
 
-        grid1
+        print!("{}", cursor::Goto(1, 1));
+        grid2
             .into_iter()
             .map(colorize_row)
             .for_each(|r| print!("{}", r));
         sleep(pause);
-        println!("{}", cursor::Goto(1, 1));
     }
 }
 
@@ -47,12 +50,11 @@ mod color_utils {
     pub const BRIGHT: ColorBounds = (8, 16);
     pub const STD_LOW: ColorBounds = (0, 8);
 
-    pub struct AnsiColors {}
-    impl AnsiColors {
-        pub fn sample(frac: f64, bs: ColorBounds) -> u8 {
-            let len = bs.1 - bs.0;
-            (len as f64 * frac) as u8
-        }
+    pub fn sample_by_frac(fr: f64, bs: ColorBounds) -> u8 {
+        assert!(fr >= 0_f64 && fr <= 1_f64);
+        let len = bs.1 - bs.0;
+        let pos: u8 = (len as f64 * fr).round() as u8;
+        pos
     }
 }
 
