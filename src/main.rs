@@ -1,5 +1,6 @@
 mod world;
-use std::time::*;
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 use termion::{clear, color, cursor, style, terminal_size};
 use world::*;
 
@@ -21,8 +22,9 @@ fn colorize_row(it: impl IntoIterator<Item = u64>) -> String {
 
 fn main() {
     println!("{}{}{}", clear::All, style::Reset, cursor::Goto(1, 1));
-    let seeds = (329329892390, 32309302);
+    let seeds = (329_329_892_390, 32_309_302);
     let (cols, rows) = terminal_size().unwrap(); // never use it :-p
+    let pause = Duration::from_millis(666);
 
     for i in [-2, -1, 0, 1, 2, 3, 4, 5] {
         let vp = (-i, -i, cols as usize, rows as usize);
@@ -32,7 +34,7 @@ fn main() {
             .into_iter()
             .map(colorize_row)
             .for_each(|r| print!("{}", r));
-
+        sleep(pause);
         println!("{}", cursor::Goto(1, 1));
     }
 }
