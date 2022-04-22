@@ -10,6 +10,10 @@ fn fraction(i: u64) -> f64 {
     i as f64 % max / max
 }
 
+fn div_ints(a: u16, b: u16) -> u16 {
+    (a as f64 / b as f64).round() as u16
+}
+
 fn colorize_row(it: impl IntoIterator<Item = u64>) -> String {
     it.into_iter()
         .map(fraction)
@@ -24,12 +28,12 @@ fn main() {
     println!("{}{}", clear::All, style::Reset);
     let seeds = (329_329_892_390, 32_309_302);
     let (cols, rows) = terminal_size().unwrap(); // never use it :-p
-    let pause = Duration::from_millis(666);
-    let nums: std::ops::Range<i64> = -7..7;
+    let pause = Duration::from_millis(1000);
+    let nums: std::ops::Range<i64> = -3..3;
 
     for i in nums {
-        let z = 4; // i.abs() as u16 + 1;
-        let vp = (i, -i, cols / z, rows / z);
+        let z = 6; // i.abs() as u16 + 1;
+        let vp = (i, -i, div_ints(cols, z), div_ints(rows, z));
         let grid1 = world(seeds, vp);
         let grid2 = redist_with_zoom(grid1, vp, z);
 

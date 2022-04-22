@@ -26,15 +26,19 @@ pub fn world((ns, ss): Seeds, vp @ (x, y, w, h): Viewport) -> IntGrid {
 
 #[allow(dead_code)]
 pub fn redist_with_zoom(grid: IntGrid, (_, _, w, h): Viewport, z: u16) -> IntGrid {
-    (0..(h * z) - 1)
-        .into_iter()
-        .map(|y| {
-            (0..(w * z) - 1)
-                .into_iter()
-                .map(|x| grid[(y / z) as usize][(x / z) as usize])
-                .collect()
-        })
-        .collect()
+    if z == 1 {
+        grid
+    } else {
+        (0..(h * z) - 1)
+            .into_iter()
+            .map(|y| {
+                (0..(w * z) - 1)
+                    .into_iter()
+                    .map(|x| grid[(y / z) as usize][(x / z) as usize])
+                    .collect()
+            })
+            .collect()
+    }
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -88,6 +92,7 @@ impl Longitudes {
             // bordering
             let west_xs =
                 Longitudes::take_from_one_dir(Direction::Normal, w_seed, 0, (w as i64 + x) as u16);
+            // TODO use iter.chain here also
             let mut east_xs =
                 Longitudes::take_from_one_dir(Direction::Reverse, e_seed, skips, skips as u16);
             east_xs.extend(west_xs);
