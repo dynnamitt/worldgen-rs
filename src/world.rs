@@ -24,23 +24,6 @@ pub fn world((ns, ss): Seeds, vp @ (x, y, w, h): Viewport) -> IntGrid {
     }
 }
 
-#[allow(dead_code)]
-pub fn redist_with_zoom(grid: IntGrid, (_, _, w, h): Viewport, z: u16) -> IntGrid {
-    if z == 1 {
-        grid
-    } else {
-        (0..(h * z) - 1)
-            .into_iter()
-            .map(|y| {
-                (0..(w * z) - 1)
-                    .into_iter()
-                    .map(|x| grid[(y / z) as usize][(x / z) as usize])
-                    .collect()
-            })
-            .collect()
-    }
-}
-
 #[derive(PartialEq, Eq, Debug)]
 pub enum Direction {
     Normal,
@@ -56,7 +39,7 @@ impl Direction {
     }
 }
 
-fn hemisphere(master_seed: u64, dir: Direction, (x, y, w, h): Viewport) -> Vec<Vec<u64>> {
+fn hemisphere(master_seed: u64, dir: Direction, (x, y, w, h): Viewport) -> IntGrid {
     let skips = y.abs() as usize;
 
     let (e_seeds, w_seeds): (Vec<_>, Vec<_>) = PsudoRng::new(master_seed)

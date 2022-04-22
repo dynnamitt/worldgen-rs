@@ -1,18 +1,12 @@
+mod utils;
 mod world;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use termion::{clear, color, cursor, style, terminal_size};
+use utils::*;
 use world::*;
 
 #[allow(dead_code)]
-fn fraction(i: u64) -> f64 {
-    let max = u64::MAX as f64;
-    i as f64 % max / max
-}
-
-fn div_ints(a: u16, b: u16) -> u16 {
-    (a as f64 / b as f64).round() as u16
-}
 
 fn colorize_row(it: impl IntoIterator<Item = u64>) -> String {
     it.into_iter()
@@ -24,18 +18,34 @@ fn colorize_row(it: impl IntoIterator<Item = u64>) -> String {
         .join("")
 }
 
+const SEEDS: Seeds = (329_329_892_390, 32_309_302);
+
+type WorldGen = Box<dyn Fn(i64, i64) -> Vec<Vec<u64>>>;
+
+fn create_world_gen(cols: u16, rows: u16, z: u16) -> WorldGen {
+    Box::new(move |x: i64, y: i64| {
+        let w = div_ceil(cols, z);
+        let h = div_ceil(rows, z);
+        world(SEEDS, (x, y, w, h))
+    })
+}
+
 fn main() {
-    println!("{}{}", clear::All, style::Reset);
-    let seeds = (329_329_892_390, 32_309_302);
     let (cols, rows) = terminal_size().unwrap(); // never use it :-p
     let pause = Duration::from_millis(1000);
-    let nums: std::ops::Range<i64> = -3..3;
+    let nums = -5_i64..=5_i64;
+    let zoom = 1;
+    let wrld_gen: WorldGen = create_world_gen(cols, rows, zoom);
+    println!("{}{}", clear::All, style::Reset);
 
     for i in nums {
-        let z = 6; // i.abs() as u16 + 1;
-        let vp = (i, -i, div_ints(cols, z), div_ints(rows, z));
-        let grid1 = world(seeds, vp);
-        let grid2 = redist_with_zoom(grid1, vp, z);
+        // let height = div_ceil(rows, z) + 2; // one xtra top+bottom
+        // let width = div_ceil(cols, z) + 2; // one xtra left+right
+        // let vp = (i, -i, width, height);
+
+        //only change in steps EQ z
+        let grid1 = wrld_gen(i, -i);
+        let grid2 = redist_with_zoom(grid1, (cols, rows), zoom);
 
         print!("{}", cursor::Goto(1, 1));
         grid2
@@ -44,6 +54,7 @@ fn main() {
             .for_each(|r| print!("{}", r));
         sleep(pause);
     }
+    println!("{}", style::Reset);
 }
 
 #[allow(dead_code)]
