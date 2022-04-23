@@ -7,7 +7,7 @@ pub type Seeds = (u64, u64);
 type IntGrid = Vec<Vec<u64>>;
 
 #[allow(dead_code)]
-pub fn world((ns, ss): Seeds, vp @ (x, y, w, h): Viewport) -> IntGrid {
+pub fn noise_2d((ns, ss): Seeds, vp @ (x, y, w, h): Viewport) -> IntGrid {
     if y >= 0 {
         // southward
         hemisphere(ss, Direction::Normal, vp)
@@ -105,5 +105,34 @@ impl Iterator for PsudoRng {
     // obj method (.)
     fn next(&mut self) -> Option<Self::Item> {
         Some(self.0.next_u64())
+    }
+}
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn world() {
+        todo!();
+    }
+}
+
+#[allow(dead_code)]
+fn tests() {
+    let seeds = (33, 77777);
+    for (x, y) in [(0, 0), (-3, -3), (-3, 0), (0, -3)] {
+        let grid1 = noise_2d(seeds, (x, y, 3, 3));
+        println!("Start pos {},{}", x, y);
+        for row in grid1.iter().enumerate() {
+            println!(" {:?}", row);
+        }
+    }
+
+    println!("-- NOW BORDERING");
+    for (x, y) in [(0, -3), (-3, 0), (-3, -3)] {
+        println!("Start pos {},{}", x, y);
+        let grid1 = noise_2d(seeds, (x, y, 45, 45));
+        for row in grid1.iter().enumerate() {
+            println!(" {:?}", row);
+        }
     }
 }
