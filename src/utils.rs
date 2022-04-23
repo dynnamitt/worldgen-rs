@@ -19,7 +19,7 @@ pub mod colors {
     pub const STD_LOW: ColorBounds = (0, 8);
 
     pub fn sample_by_frac(fr: f64, bs: ColorBounds) -> u8 {
-        assert!(fr >= 0_f64 && fr <= 1_f64);
+        assert!(fr >= 0.00_f64 && fr <= 1.00_f64);
         let len = bs.1 - bs.0;
         let pos: u8 = (len as f64 * fr).round() as u8;
         pos
@@ -40,15 +40,32 @@ mod test {
     #[test]
     fn frac() {
         let m = u64::MAX;
-        let xs = [m / 2, m / 4, m / 666, 1_000_000, 1_000, 1];
+        let fixture = [m / 2, m / 4, m / 666, 1_000_000, 1_000, 1];
         let mut prev = m as f64;
-        for n in xs {
+        for n in fixture {
             let f = math::fraction(n);
             assert!(f < 1.0000000);
             assert!(f > 0.0000000);
             assert!(f < prev);
             prev = f;
         }
+    }
+
+    #[test]
+    fn color_sample_low() {
+        assert_eq!(colors::sample_by_frac(0.000001_f64, colors::GRAYSCALE), 0);
+        assert_eq!(colors::sample_by_frac(0.000001_f64, colors::BRIGHT), 0);
+    }
+    #[test]
+    fn color_sample_hi() {
+        assert_eq!(
+            colors::sample_by_frac(1.0_f64, colors::RGB),
+            colors::RGB.1 - colors::RGB.0
+        );
+        assert_eq!(
+            colors::sample_by_frac(1.0_f64, colors::STD_LOW),
+            colors::STD_LOW.1 - colors::STD_LOW.0
+        );
     }
 }
 
