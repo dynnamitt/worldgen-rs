@@ -4,10 +4,26 @@ use rand_chacha::ChaCha8Rng;
 pub type Viewport = (i64, i64, u16, u16);
 pub type Seeds = (u64, u64);
 
-type IntGrid = Vec<Vec<u64>>;
+#[derive(Eq, PartialEq, Debug)]
+enum RowOffset {
+    Complete,
+    CappedEnds,
+}
+impl RowOffset {
+    fn from_usize(n: usize) -> Self {
+        if n % 2 == 0 {
+            Self::Complete
+        } else {
+            Self::CappedEnds
+        }
+    }
+}
+
+pub type Row<T> = (RowOffset, Vec<T>);
+pub type IntGrid<T> = Vec<Row<T>>;
 
 #[allow(dead_code)]
-pub fn noise_2d((ns, ss): Seeds, vp @ (x, y, w, h): Viewport) -> IntGrid {
+pub fn noise_2d((ns, ss): Seeds, vp @ (x, y, w, h): Viewport) -> IntGrid<u64> {
     if y >= 0 {
         // southward
         hemisphere(ss, Direction::Normal, vp)
@@ -29,6 +45,7 @@ pub enum Direction {
     Normal,
     Reverse,
 }
+
 impl Direction {
     fn organize<T>(self, xs: Vec<T>) -> Vec<T> {
         if self == Direction::Reverse {
@@ -39,7 +56,7 @@ impl Direction {
     }
 }
 
-fn hemisphere(master_seed: u64, dir: Direction, (x, y, w, h): Viewport) -> IntGrid {
+fn hemisphere(master_seed: u64, dir: Direction, (x, y, w, h): Viewport) -> IntGrid<u64> {
     let skips = y.abs() as usize;
 
     let (e_seeds, w_seeds): (Vec<_>, Vec<_>) = PsudoRng::new(master_seed)
@@ -50,7 +67,7 @@ fn hemisphere(master_seed: u64, dir: Direction, (x, y, w, h): Viewport) -> IntGr
 
     let seed_pairs = e_seeds.iter().zip(w_seeds.iter());
 
-    let xs: Vec<Vec<u64>> = seed_pairs
+    let xs: Vec<_> = seed_pairs
         .map(|((_i, e_seed), (_j, w_seed))| Longitudes::take_finite((*e_seed, *w_seed), x, w))
         .collect();
 
@@ -62,7 +79,7 @@ fn hemisphere(master_seed: u64, dir: Direction, (x, y, w, h): Viewport) -> IntGr
 pub struct Longitudes {}
 
 impl Longitudes {
-    pub fn take_finite((e_seed, w_seed): Seeds, x: i64, w: u16) -> Vec<u64> {
+    pub fn take_finite((e_seed, w_seed): Seeds, x: i64, w: u16) -> Row<u64> {
         let skips = x.abs() as usize;
         //println!("Skips = {}", skips);
         if x >= 0 {
@@ -78,15 +95,20 @@ impl Longitudes {
             // TODO use iter.chain here also
             let mut east_xs =
                 Longitudes::take_from_one_dir(Direction::Reverse, e_seed, skips, skips as u16);
-            east_xs.extend(west_xs);
-            east_xs
+
+            assert_eq!(west_xs.0, east_xs.0); // same RowOffset ?
+
+            (
+                east_xs.0,
+                east_xs.1.into_iter().chain(west_xs.1.into_iter()).collect(),
+            )
         }
     }
 
-    fn take_from_one_dir(dir: Direction, seed: u64, skips: usize, w: u16) -> Vec<u64> {
+    fn take_from_one_dir(dir: Direction, seed: u64, skips: usize, w: u16) -> Row<u64> {
         let rng = PsudoRng::new(seed);
-        let xs: Vec<u64> = rng.skip(skips).take(w as usize).collect();
-        dir.organize(xs)
+        let xs: Vec<_> = rng.skip(skips).take(w as usize).collect();
+        (RowOffset::from_usize(skips), dir.organize(xs))
     }
 }
 

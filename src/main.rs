@@ -21,7 +21,7 @@ fn colorize_row(it: impl IntoIterator<Item = u64>) -> String {
 
 const SEEDS: Seeds = (329_329_892_390, 32_309_302);
 
-type WorldGen = Box<dyn Fn(i64, i64) -> Vec<Vec<u64>>>;
+type WorldGen = Box<dyn Fn(i64, i64) -> IntGrid<u64>>;
 
 fn create_world_gen(cols: u16, rows: u16, z: u16) -> WorldGen {
     Box::new(move |x: i64, y: i64| {
